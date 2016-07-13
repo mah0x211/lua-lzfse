@@ -1,0 +1,6 @@
+[submodule "deps/lauxhlib"]
+	path = deps/lauxhlib
+	url = https://github.com/mah0x211/lauxhlib.git
+[submodule "deps/lzfse"]
+	path = deps/lzfse
+	url = https://github.com/lzfse/lzfse.git
