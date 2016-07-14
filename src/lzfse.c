@@ -75,7 +75,7 @@ static int encode_lua( lua_State *L )
 {
     size_t slen = 0;
     const char *src = lauxh_checklstring( L, 1, &slen );
-    size_t dlen = slen * 4;
+    size_t dlen = slen;
     uint8_t *dst = (void*)malloc( dlen );
 
     if( dst )
