@@ -38,9 +38,11 @@ static int decode_lua( lua_State *L )
 {
     size_t slen = 0;
     const char *src = lauxh_checklstring( L, 1, &slen );
-    size_t dlen = slen * 4;
+    size_t buflen = slen * 4;
+    size_t dlen = buflen;
     uint8_t *dst = (void*)malloc( dlen );
     void *aux = NULL;
+    void *buf = NULL;
     const char *errstr = NULL;
 
     if( !dst ){
@@ -55,15 +57,31 @@ static int decode_lua( lua_State *L )
         return 2;
     }
 
-    dlen = lzfse_decode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
-    if( dlen ){
-        lua_pushlstring( L, (const char*)dst, dlen );
-        free( dst );
-        free( aux );
-        return 1;
+    while( 1 )
+    {
+        dlen = lzfse_decode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
+        if( !dlen ){
+            errstr = "failed to lzfse_decode_buffer()";
+            break;
+        }
+        else if( dlen != buflen ){
+            lua_pushlstring( L, (const char*)dst, dlen );
+            free( dst );
+            free( aux );
+            return 1;
+        }
+
+        // probably, need a more buffer space
+        buflen <<= 1;
+        buf = realloc( dst, buflen );
+        if( !buf ){
+            errstr = strerror( errno );
+            break;
+        }
+        dst = (uint8_t*)buf;
+        dlen = buflen;
     }
 
-    errstr = "failed to lzfse_decode_buffer()";
     free( aux );
     free( dst );
     lua_pushnil( L );
