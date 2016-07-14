@@ -75,7 +75,8 @@ static int encode_lua( lua_State *L )
 {
     size_t slen = 0;
     const char *src = lauxh_checklstring( L, 1, &slen );
-    size_t dlen = slen;
+    size_t buflen = slen;
+    size_t dlen = buflen;
     uint8_t *dst = (void*)malloc( dlen );
 
     if( dst )
@@ -85,13 +86,28 @@ static int encode_lua( lua_State *L )
 
         if( aux )
         {
-            dlen = lzfse_encode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
+            while( 1 )
+            {
+                dlen = lzfse_encode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
 
-            if( dlen ){
-                lua_pushlstring( L, (const char*)dst, dlen );
-                free( dst );
-                free( aux );
-                return 1;
+                if( dlen ){
+                    lua_pushlstring( L, (const char*)dst, dlen );
+                    free( dst );
+                    free( aux );
+                    return 1;
+                }
+                else
+                {
+                    void *buf = NULL;
+
+                    buflen <<= 1;
+                    buf = realloc( dst, buflen );
+                    if( !buf ){
+                        break;
+                    }
+                    dst = (uint8_t*)buf;
+                    dlen = buflen;
+                }
             }
 
             free( aux );
