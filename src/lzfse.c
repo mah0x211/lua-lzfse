@@ -25,6 +25,7 @@
  */
 
 
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 // utilities
@@ -33,9 +34,47 @@
 #include "lzfse.h"
 
 
+static int encode_lua( lua_State *L )
+{
+    size_t slen = 0;
+    const char *src = lauxh_checklstring( L, 1, &slen );
+    size_t dlen = slen * 4;
+    uint8_t *dst = (void*)malloc( dlen );
+
+    if( dst )
+    {
+        size_t alen = lzfse_encode_scratch_size();
+        void *aux = malloc( alen );
+
+        if( aux )
+        {
+            dlen = lzfse_encode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
+
+            if( dlen ){
+                lua_pushlstring( L, (const char*)dst, dlen );
+                free( dst );
+                free( aux );
+                return 1;
+            }
+
+            free( aux );
+        }
+
+        free( dst );
+    }
+
+
+    lua_pushnil( L );
+    lua_pushstring( L, strerror( errno ) );
+
+    return 2;
+}
+
+
 LUALIB_API int luaopen_lzfse( lua_State *L )
 {
     struct luaL_Reg funcs[] = {
+        { "encode", encode_lua },
         { NULL, NULL }
     };
     struct luaL_Reg *ptr = funcs;
