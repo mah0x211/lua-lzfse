@@ -5,14 +5,13 @@ LZFSE compression and decompression library bindings.
 
 ## Dependencies
 
-- luarocks-fetch-gitrec: https://github.com/siffiejoe/luarocks-fetch-gitrec
 - lzfse: https://github.com/lzfse/lzfse
 
 
 ## Installation
 
 ```sh
-luarocks install lzfse --from=http://mah0x211.github.io/rocks/
+luarocks install lzfse
 ```
 
 
