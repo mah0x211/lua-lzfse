@@ -24,144 +24,134 @@
  *  Created by Masatoshi Teruya on 16/07/14.
  */
 
-
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 // utilities
 #include "lauxhlib.h"
 // mbedtls headers
 #include "lzfse.h"
 
-
-static int decode_lua( lua_State *L )
+static int decode_lua(lua_State *L)
 {
-    size_t slen = 0;
-    const char *src = lauxh_checklstring( L, 1, &slen );
-    size_t buflen = slen * 4;
-    size_t dlen = buflen;
-    uint8_t *dst = (void*)malloc( dlen );
-    void *aux = NULL;
-    void *buf = NULL;
+    size_t slen        = 0;
+    const char *src    = lauxh_checklstring(L, 1, &slen);
+    size_t buflen      = slen * 4;
+    size_t dlen        = buflen;
+    uint8_t *dst       = (void *)malloc(dlen);
+    void *aux          = NULL;
+    void *buf          = NULL;
     const char *errstr = NULL;
 
-    if( !dst ){
-        lua_pushnil( L );
-        lua_pushstring( L, strerror( errno ) );
+    if (!dst) {
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
         return 2;
-    }
-    else if( !( aux = malloc( lzfse_decode_scratch_size() ) ) ){
-        free( dst );
-        lua_pushnil( L );
-        lua_pushstring( L, strerror( errno ) );
+    } else if (!(aux = malloc(lzfse_decode_scratch_size()))) {
+        free(dst);
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
         return 2;
     }
 
-    while( 1 )
-    {
-        dlen = lzfse_decode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
-        if( !dlen ){
+    while (1) {
+        dlen = lzfse_decode_buffer(dst, dlen, (uint8_t *)src, slen, aux);
+        if (!dlen) {
             errstr = "failed to lzfse_decode_buffer()";
             break;
-        }
-        else if( dlen != buflen ){
-            lua_pushlstring( L, (const char*)dst, dlen );
-            free( dst );
-            free( aux );
+        } else if (dlen != buflen) {
+            lua_pushlstring(L, (const char *)dst, dlen);
+            free(dst);
+            free(aux);
             return 1;
         }
 
         // probably, need a more buffer space
         buflen <<= 1;
-        buf = realloc( dst, buflen );
-        if( !buf ){
-            errstr = strerror( errno );
+        buf = realloc(dst, buflen);
+        if (!buf) {
+            errstr = strerror(errno);
             break;
         }
-        dst = (uint8_t*)buf;
+        dst  = (uint8_t *)buf;
         dlen = buflen;
     }
 
-    free( aux );
-    free( dst );
-    lua_pushnil( L );
-    lua_pushstring( L, errstr );
+    free(aux);
+    free(dst);
+    lua_pushnil(L);
+    lua_pushstring(L, errstr);
 
     return 2;
 }
 
-
-static int encode_lua( lua_State *L )
+static int encode_lua(lua_State *L)
 {
-    size_t slen = 0;
-    const char *src = lauxh_checklstring( L, 1, &slen );
-    size_t buflen = slen;
-    size_t dlen = buflen;
-    uint8_t *dst = malloc( dlen );
-    void *aux = NULL;
+    size_t slen        = 0;
+    const char *src    = lauxh_checklstring(L, 1, &slen);
+    size_t buflen      = slen;
+    size_t dlen        = buflen;
+    uint8_t *dst       = malloc(dlen);
+    void *aux          = NULL;
     const char *errstr = NULL;
-    void *buf = NULL;
+    void *buf          = NULL;
 
-    if( !dst ){
-        lua_pushnil( L );
-        lua_pushstring( L, strerror( errno ) );
+    if (!dst) {
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
+        return 2;
+    } else if (!(aux = malloc(lzfse_encode_scratch_size()))) {
+        free(dst);
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
         return 2;
     }
-    else if( !( aux = malloc( lzfse_encode_scratch_size() ) ) ){
-        free( dst );
-        lua_pushnil( L );
-        lua_pushstring( L, strerror( errno ) );
-        return 2;
-    }
 
-    while( 1 )
-    {
-        dlen = lzfse_encode_buffer( dst, dlen, (uint8_t*)src, slen, aux );
+    while (1) {
+        dlen = lzfse_encode_buffer(dst, dlen, (uint8_t *)src, slen, aux);
 
-        if( dlen ){
-            lua_pushlstring( L, (const char*)dst, dlen );
-            free( dst );
-            free( aux );
+        if (dlen) {
+            lua_pushlstring(L, (const char *)dst, dlen);
+            free(dst);
+            free(aux);
             return 1;
         }
 
         // probably, need a more buffer space
         buflen <<= 1;
-        buf = realloc( dst, buflen );
-        if( !buf ){
-            errstr = strerror( errno );
+        buf = realloc(dst, buflen);
+        if (!buf) {
+            errstr = strerror(errno);
             break;
         }
-        dst = (uint8_t*)buf;
+        dst  = (uint8_t *)buf;
         dlen = buflen;
     }
 
-    free( aux );
-    free( dst );
-    lua_pushnil( L );
-    lua_pushstring( L, errstr );
+    free(aux);
+    free(dst);
+    lua_pushnil(L);
+    lua_pushstring(L, errstr);
 
     return 2;
 }
 
-
-LUALIB_API int luaopen_lzfse( lua_State *L )
+LUALIB_API int luaopen_lzfse(lua_State *L)
 {
     struct luaL_Reg funcs[] = {
-        { "encode", encode_lua },
-        { "decode", decode_lua },
-        { NULL, NULL }
+        {"encode", encode_lua},
+        {"decode", decode_lua},
+        {NULL,     NULL      }
     };
     struct luaL_Reg *ptr = funcs;
 
     // create table
-    lua_newtable( L );
+    lua_newtable(L);
     // add functions
-    while( ptr->name ){
-        lauxh_pushfn2tbl( L, ptr->name, ptr->func );
+    while (ptr->name) {
+        lauxh_pushfn2tbl(L, ptr->name, ptr->func);
         ptr++;
     }
 
     return 1;
 }
-
