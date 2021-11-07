@@ -1,5 +1,7 @@
 # lua-lzfse
 
+[![test](https://github.com/mah0x211/lua-lzfse/actions/workflows/test.yml/badge.svg)](https://github.com/mah0x211/lua-lzfse/actions/workflows/test.yml)
+
 LZFSE compression and decompression library bindings.
 
 
