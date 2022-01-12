@@ -1,6 +1,5 @@
 local unpack = unpack or table.unpack
 local lzfse = require('lzfse')
-local assert = require('assertex')
 local testcase = require('testcase')
 
 function testcase.encode_decode()

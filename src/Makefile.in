@@ -1,5 +1,6 @@
 CC=@CC@
-CFLAGS=@CFLAGS@ -Wall -Wno-trigraphs -Wmissing-field-initializers -Wmissing-prototypes -Wreturn-type -Wmissing-braces -Wparentheses -Wswitch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare
+CFLAGS=@CFLAGS@
+WARNINGS=-Wall -Wno-trigraphs -Wmissing-field-initializers -Wmissing-prototypes -Wreturn-type -Wmissing-braces -Wparentheses -Wswitch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare
 CPPFLAGS=-I. -I../deps/lauxhlib -I../deps/lzfse/src @CPPFLAGS@
 LDFLAGS=@LIBFLAG@
 LIBS=@LIBS@ ../deps/lzfse/build/bin/liblzfse.a
@@ -9,13 +10,13 @@ OBJ=$(SRC:.c=.@OBJ_EXTENSION@)
 LIBDIR=@LIBDIR@
 
 
-all: $(OBJ) $(TARGET)
+all: $(TARGET)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^
+	$(CC) $(CFLAGS) $(WARNINGS) $(CPPFLAGS) -c $^
 
-$(TARGET):
-	$(CC) $(LDFLAGS) $(LIBS) -o $@ *.o
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 install:
 	mkdir -p $(LIBDIR)
